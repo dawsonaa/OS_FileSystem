@@ -241,22 +241,39 @@ size_t block_store_write(block_store_t *const bs, const size_t block_id, const v
 /// \return Pointer to new BS device, NULL on error
 ///
 block_store_t *block_store_deserialize(const char *const filename) {
-    if (filename) {
-        int fd = open(filename, O_RDONLY); // open file (read only)
-        if (fd < 0) { // if opening file fails
-            return 0;
-        }
-        block_store_t *bs = NULL;
-        bs = block_store_create(filename);
-        int df_read1, df_read2;
-        df_read1 = read(fd, bs->data_blocks, BLOCK_STORE_AVAIL_BLOCKS*BLOCK_SIZE_BYTES); // read bs->Data from the file
-        df_read2 = read(fd, bs->fbm, BLOCK_STORE_NUM_BLOCKS/8); // read bs->FBM from the file
-        if (df_read1 < 0 || df_read2 < 0) { // if the system call returns an error
-            return 0;
-        }
-        return bs;
+     int fd = 0;
+    
+    //error check
+    if (filename == NULL){
+        return 0;
     }
-    return 0;
+    
+    //open file
+    fd = open(filename, O_RDONLY);
+    
+    //return error of file
+    if (fd < 0){
+        return 0;
+    }
+    block_store_t *bs = NULL;
+    bs = block_store_create(filename);
+    
+    int readOne = 0;
+    //write bs info to a file and return size written
+    for(int i = 0; i <= BLOCK_STORE_AVAIL_BLOCKS; i++)
+    {
+      if (block_store_request(bs, i) == true)
+	{
+        readOne  = read(fd, bs->blockArray[i].bytes, BLOCK_SIZE_BYTES);
+        if (readOne != BLOCK_SIZE_BYTES)
+          {
+	return 0;
+          }
+        }
+    }
+	close(fd);
+      return bs;
+    //close file
 }
 
 ///
